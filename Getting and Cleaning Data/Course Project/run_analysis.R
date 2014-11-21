@@ -1,13 +1,14 @@
 library(dplyr)
 
+## Get the activity labels and column headers
 activity_labels <- tbl_df(read.table("activity_labels.txt"))
 features <- read.table("features.txt")[2]
 
 test_files <- c("test/subject_test.txt", "test/Y_test.txt", "test/X_test.txt")
 train_files <- c("train/subject_train.txt", "train/Y_train.txt", "train/X_train.txt")
 
-output_file <- "tidy_output.txt"
-summary_file <- "summary.txt"
+output_file <- "full_output.txt"
+summary_file <- "summary_output.txt"
 
 
 ## Get the Subject for each row
@@ -45,12 +46,12 @@ for (i in 1:length(final_colnames)) {
   final_colnames[i] = gsub("-", " ", final_colnames[i])
   final_colnames[i] = gsub("std\\()", "StdDev", final_colnames[i])
   final_colnames[i] = gsub("mean\\()", "Mean", final_colnames[i])
-  final_colnames[i] = gsub("meanFreq\\()", "MeanFrequency", final_colnames[i])  
+  final_colnames[i] = gsub("meanFreq\\()", "MeanFrequency", final_colnames[i])
 }
 colnames(final_data) <- final_colnames
 
 
-## Write the output file  
+## Write the output file
 print(paste("Writing to", output_file))
 write.table(final_data, file = output_file, row.names = FALSE)
 
@@ -63,6 +64,6 @@ grouped_data$Activity <- activity_labels$V2[match(grouped_data$Activity, activit
 grouped_data <- grouped_data[,3:ncol(grouped_data)]
 
 
-## Write the summary file  
+## Write the summary file
 print(paste("Writing to", summary_file))
 write.table(grouped_data, file = summary_file, row.names = FALSE)
