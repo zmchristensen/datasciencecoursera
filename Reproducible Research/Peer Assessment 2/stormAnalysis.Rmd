@@ -1,0 +1,143 @@
+# Historical Storm Analysis
+
+This analysis looks at the human and economic impact of storms over the past 60 years. Understanding the various impact of different types of weather is important for informing public policy. More effort should be put into understanding, predicting, and defending against the weather events that kill and injure the most people; knowing what phenomenon cause the most economic damage will lead to better planning and development to minimize these costs. 
+
+The data for this analysis comes from a dataset compiled by the National Weather Service. the dataset contains information about storms from 1950 to 2011. Information about the dataset can be found in the <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf">Storm Data Documentation</a> and on the <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf">Nation Climatic Data Center Storm Events FAQ page</a>.
+
+
+## Data Processing
+```{r libraries, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(reshape2)
+library(dplyr)
+library(R.utils)
+```
+
+#### Read the dataset into the system
+```{r readData, cache=TRUE}
+bunzip2("repdata-data-StormData.csv.bz2", remove = FALSE, overwrite = TRUE)
+data <- read.csv("repdata-data-StormData.csv")
+```
+
+#### Human Damage Calculations
+```{r humanDamage, cache=TRUE, message=FALSE, warning=FALSE}
+## Summarize the FATALITIES and INJURIES by EVTYPE
+human_damage_summary <- aggregate(data[,23:24], by = list(Type = data$EVTYPE), FUN = sum)
+
+## Select data from the top 0.5% based on fatalities OR injuries
+fatal_quant <- quantile(human_damage_summary[,2], probs = c(0.995))
+injury_quant <- quantile(human_damage_summary[,3], probs = c(0.995))
+top_human_damage <- filter(human_damage_summary, human_damage_summary[,2] >= fatal_quant | human_damage_summary[,3] >= injury_quant)
+
+## Melt this data, the order it by value
+top_human_melt <- melt(top_human_damage) %>% arrange(desc(value))
+
+## Select a larger window of data to for scatterplot
+fatal_quant <- quantile(human_damage_summary[,2], probs = c(0.99))
+injury_quant <- quantile(human_damage_summary[,3], probs = c(0.99))
+top_human_sum <- filter(human_damage_summary, human_damage_summary[,2] >= fatal_quant | human_damage_summary[,3] >= injury_quant) %>% mutate(TOTAL_HUMAN = FATALITIES + INJURIES)
+```
+
+#### Economic Damage Calculations
+```{r economicDamage, cache=TRUE, message=FALSE, warning=FALSE}
+## Select the Event type and the property and crop damage columns
+econ_damage <- data[,c("EVTYPE","PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
+
+## Contrain the exp columns to characters
+econ_damage$PROPDMGEXP <- as.character(econ_damage$PROPDMGEXP)
+econ_damage$CROPDMGEXP <- as.character(econ_damage$CROPDMGEXP)
+
+## Replace the letter values with numbers (k|K = 1,000, m|M = 1,000,000, b|B = 1,000,000,000)
+## remove all other values, and constrain to numeric
+econ_damage[(econ_damage$PROPDMGEXP == "k" | econ_damage$PROPDMGEXP == "K"), 3] <- 1000
+econ_damage[(econ_damage$PROPDMGEXP == "m" | econ_damage$PROPDMGEXP == "M"), 3] <- 1000000
+econ_damage[(econ_damage$PROPDMGEXP == "b" | econ_damage$PROPDMGEXP == "B"), 3] <- 1000000000
+econ_damage[!(econ_damage$PROPDMGEXP == "1000" | econ_damage$PROPDMGEXP == "1e+06" | econ_damage$PROPDMGEXP == "1e+09"), 3] <- 0
+econ_damage$PROPDMGEXP <- as.numeric(econ_damage$PROPDMGEXP)
+
+econ_damage[(econ_damage$CROPDMGEXP == "k" | econ_damage$CROPDMGEXP == "K"), 5] <- 1000
+econ_damage[(econ_damage$CROPDMGEXP == "m" | econ_damage$CROPDMGEXP == "M"), 5] <- 1000000
+econ_damage[(econ_damage$CROPDMGEXP == "b" | econ_damage$CROPDMGEXP == "B"), 5] <- 1000000000
+econ_damage[!(econ_damage$CROPDMGEXP == "1000" | econ_damage$CROPDMGEXP == "1e+06" | econ_damage$CROPDMGEXP == "1e+09"), 5] <- 0
+econ_damage$CROPDMGEXP <- as.numeric(econ_damage$CROPDMGEXP)
+
+## Multiply DMG by DMGEXP to calculate the total damange and append these columns to the data frame
+econ_damage <- mutate(econ_damage, PROP_TOTAL = econ_damage$PROPDMG * econ_damage$PROPDMGEXP, CROP_TOTAL = econ_damage$CROPDMG * econ_damage$CROPDMGEXP)
+
+## Summarize the PROP_TOTAL and CROP_TOTAL by Type
+econ_damage_summary <- aggregate(econ_damage[, c("PROP_TOTAL", "CROP_TOTAL")], by = list(Type = econ_damage$EVTYPE), FUN = sum)
+
+## Select data from the top 0.5% based on prop_total OR crop_total
+prop_quant <- quantile(econ_damage_summary$PROP_TOTAL, probs = c(0.995))
+crop_quant <- quantile(econ_damage_summary$CROP_TOTAL, probs = c(0.995))
+top_econ_damage <- filter(econ_damage_summary, econ_damage_summary$PROP_TOTAL >= prop_quant | econ_damage_summary$CROP_TOTAL >= crop_quant)
+
+## Scale this data down, so the graph will be in billions
+top_econ_damage$PROP_TOTAL <- top_econ_damage$PROP_TOTAL / 1000000000
+top_econ_damage$CROP_TOTAL <- top_econ_damage$CROP_TOTAL / 1000000000
+
+## Melt this data, the order it by value
+top_econ_melt <- melt(top_econ_damage) %>% arrange(desc(value))
+
+## Select a larger window of data to for scatterplot
+prop_quant <- quantile(econ_damage_summary$PROP_TOTAL, probs = c(0.99))
+crop_quant <- quantile(econ_damage_summary$CROP_TOTAL, probs = c(0.99))
+top_econ_sum <- filter(econ_damage_summary, econ_damage_summary$PROP_TOTAL >= prop_quant | econ_damage_summary$CROP_TOTAL >= crop_quant) %>% mutate(TOTAL_ECON = (PROP_TOTAL + CROP_TOTAL) / 1000000000)
+```
+
+#### Human and Economic Damage Comparison
+```{r, message=FALSE, warning=FALSE}
+## Join the two tables of total human and economic damage
+total <- inner_join(x = top_human_sum, y = top_econ_sum)
+```
+
+## Results
+After the data has been processed - summaries of human and economic costs calculated for each event type - the data needs to be interpreted. To fully understand the data, it is important examine all of the information; for this specific analysis, though, the most important data is the information converning the most damaging types of event. 
+
+### Human Damage
+```{r}
+quantile(human_damage_summary$FATALITIES, probs = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1))
+quantile(human_damage_summary$INJURIES, probs = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1))
+```
+
+As shown by this, the majority of of weather events do not cause fatalities or injuries. This is why only the weather events from the 99.5 quantile of Fatalities OR Injuries were selected and plotted.
+```{r}
+top_human_damage %>% arrange(desc(FATALITIES))
+```
+
+```{r humanResults, fig.width=10}
+## Human Damage Plot, Fatalities and Injuries
+qplot(reorder(Type, desc(value)), value, data = top_human_melt, fill = variable, geom = "bar", position = "dodge", stat = "identity", xlab = "", ylab = "Count", main = "Fatalities and Injuries, by Event Type") + theme(legend.position = "right", axis.text.x = element_text(angle = 0, hjust = 0.5)) + geom_text(aes(label=value, ymax = value, hjust = ifelse(value>10000,1.1,-.1)), position = position_dodge(width=1), angle = 90, size = 4)
+```
+
+As shown by this plot, the weather event that has the most impact on human life is clearly <strong>Tornados</strong>, killing over 5,600 people and injuring another 91,000+ individuals. Tornados are followed by <strong>Excessive Heat</strong>, followed closely by <strong>Thunderstorm Winds, Lightning, and Floods</strong>. 
+
+### Economic Damage
+```{r}
+quantile(econ_damage_summary$PROP_TOTAL, probs = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1))
+quantile(econ_damage_summary$CROP_TOTAL, probs = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1))
+```
+
+Compared to damage to human life, a significantly larger set of weather events causes damange to property and crops. However, the difference between the the 90th and 100th quantile is still significant, and thus only events that caused crop OR property damage in the 99.5 quantile were selected and plotted. From now on, the data is shown in billions of dollars.
+```{r}
+top_econ_damage %>% arrange(desc(PROP_TOTAL))
+```
+
+```{r econResults, fig.width=10}
+## Economic Damage Plot, Property and Crop Damage
+qplot(reorder(Type, desc(value)), value, data = top_econ_melt, fill = variable, geom = "bar", position = "dodge", stat = "identity", xlab = "", ylab = "Total Dollars (in billions)", main = "Property and Crop Damage, by Event Type") + 
+    theme(legend.position = "right", axis.text.x = element_text(angle = 90, hjust = 1)) +
+    geom_text(aes(label=paste("$", round(value, digits = 2)), ymax = value, hjust = ifelse(value>100,1.1,-.1)), position = position_dodge(width=1), angle = 90, size = 3)
+```
+As shown by this plot, the weather event that caused the most Property Damage <strong>Flooding</strong>, followed by <strong>Hurricanes/Typhoons, Tornados, and Storm Surges</strong>. The most Crop Damage was was caused by <strong>Drought</strong>, followed by <strong>Floods and Ice Storms</strong>. Considering both factors, <strong>Floods</strong> clearly cause the most economic damage.
+
+## Human and Economic Damage Comparison
+To understand the total impact of the worst weather events, the total damage to human life (Fatalties + Injuries) and total economic damage (Property + Crop) was computed and arranged side-by-side.
+```{r}
+total[,c("Type", "TOTAL_HUMAN", "TOTAL_ECON")]
+```
+
+```{r scatterPlot, fig.width=10}
+ggplot(data = total, aes(x = TOTAL_HUMAN, y = TOTAL_ECON, color = Type)) + geom_point(size = 5, alpha = 0.8) + labs(x = "Total Fatalities and Injuries", y = "Total Crop and Property Damage (billions of $)", title = "")
+```
+This plot shows the impact of the top storms in terms of human and economic damage. This plot emphasizes how significant the econmic damage caused by <strong>Floods</strong> and the human damage caused by <strong>Tornados</strong> actually is: both of these events are outlierers on the respective axis. The remaining top events cluster much closer to the axis, causing similar amounts of economic and human damage.
