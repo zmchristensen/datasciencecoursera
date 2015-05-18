@@ -1,0 +1,86 @@
+---
+title: "Tooth Growth Analysis"
+author: "Zach Christensen"
+date: "January 24, 2015"
+output: pdf_document
+---
+
+# Tooth Growth Data Analysis
+Zach Christensen
+
+## Data Setup
+First we need to load the Tooth Growth data set from the datasets library.
+```{r, loadData}
+library(ggplot2)
+library(dplyr)
+library(datasets)
+data(ToothGrowth)
+```
+
+Now that the data set is available in our working directory, let's do some basic investigation:
+```{r dataSummary}
+str(ToothGrowth)
+summary(ToothGrowth)
+```
+
+Using this information, and the documentation available by running, we know that the data set contains 6 observations for 10 guinea pigs, based on three different doses of Vitamin C through two different delivery methods.
+
+```{r basicPlot}
+ggplot(ToothGrowth, aes( x = supp, y=len, fill = dose)) +
+    geom_bar(stat = "identity") +
+    facet_grid(. ~ dose) +  
+    xlab("Delivery Method") +
+    ylab("Tooth Length") +
+    guides(fill=guide_legend(title="Dose"))
+```
+
+## Confidence Intervals
+To examine the effects of the various dosages and delivery methods of Vitamin C to the pigs, we will use the T Test to create confidence intervals. 
+
+### Delivery Method
+First, let's look at the effect of the delivery method (OJ vs VC). We will do two calculations, one where we assume the variance is equal, and one where we assume the variance is unequal.
+
+```{r suppConfidenceIntervals}
+sup.var.equal <- t.test(len~supp, paired = F, var.equal = T, data = ToothGrowth)
+sup.var.not.equal <- t.test(len~supp, paired = F, var.equal = F, data = ToothGrowth)
+
+sup.summary <- data.frame("Title" = c("Variance Equal", "Variance Unequal"), "p-Value" = c(sup.var.equal$p.value, sup.var.not.equal$p.value), "Lower Bound" = c(sup.var.equal$conf.int[1], sup.var.not.equal$conf.int[1]), "Upper Bound" = c(sup.var.equal$conf.int[2], sup.var.not.equal$conf.int[2]))
+sup.summary
+```
+
+As we can see, both tests result in a p-value greater than 0.05, with confidence intervals that contain zero. Thus, we cannot rule out the null hypothesis, and have to conclude that the deliver method has neglible influence on tooth growth.
+
+### Dosage
+Now, let's examine the effects of dosage on tooth growth. To do this, we will create three subsets of the data, one for each dosage. We will then do T-tests to compare the difference between 0.5 and 1.0, 0.5 and 2.0, and 1.0 and 2.0.
+
+```{r doseConfidenceIntervals}
+dose05 <- filter(ToothGrowth, dose == 0.5)$len
+dose10 <- filter(ToothGrowth, dose == 1.0)$len
+dose20 <- filter(ToothGrowth, dose == 2.0)$len
+
+t.0510.equal <- t.test(dose05, dose10, paired = F, var.equal = T)
+t.0510 <- t.test(dose05, dose10, paired = F, var.equal = F)
+t.0520.equal <- t.test(dose05, dose20, paired = F, var.equal = T)
+t.0520 <- t.test(dose05, dose20, paired = F, var.equal = F)
+t.1020.equal <- t.test(dose10, dose20, paired = F, var.equal = T)
+t.1020 <- t.test(dose10, dose20, paired = F, var.equal = F)
+
+dose.summary <- data.frame("Title" = c("0.5 - 1.0", "0.5 - 1.0, Equal Var", "0.5 - 2.0", "0.5 - 2.0, Equal Var", "1.0 - 2.0", "1.0 - 2.0, Equal Var"), "p-Value" = c(t.0510$p.value, t.0510.equal$p.value, t.0520$p.value, t.0520.equal$p.value, t.1020$p.value, t.1020.equal$p.value), "Lower Bound" = c(t.0510$conf.int[1], t.0510.equal$conf.int[1], t.0520$conf.int[1], t.0520.equal$conf.int[1], t.1020$conf.int[1], t.1020.equal$conf.int[1]), "Upper Bound" = c(t.0510$conf.int[2], t.0510.equal$conf.int[2], t.0520$conf.int[2], t.0520.equal$conf.int[2], t.1020$conf.int[2], t.1020.equal$conf.int[2]))
+
+dose.summary
+```
+
+
+Looking at the data above, there appears to be a strong correlation between dosage and tooth growth. All of the p-values are very small and the confidence intervals are also significant, with none of them containing zero. 
+
+
+## Conclusions
+Given the analysis above, we can draw a few conclusions about the impact of Vitamin C on tooth growth. First off, our analysis revealed little correlation between tooth growth and supplement (OJ or VC). The p-value was greater than 0.05, and the confidence intervals contained zero. However, it should be noted that this only considers the impact of supplement from a very high level, and doesn't really answer any questions about the impact of supplement type in regards to the dosage level or the specific pig.
+
+Additionally, we found a strong correlation between dosage and tooth growth. The p-values for these test very all very small (less than 10^-4^), and none of the confidence intervals contained zero. The confidence intervals also followed a logic trend. If we assume that more vitamin C leads to greater tooth growth, we would expect to see a greater difference in tooth length between 0.5 and 2.0 dosage levels. The results of the test support this, with the invervales between 0.5 and 2.0 being much greater (more negative) than the difference between 0.5 and 1.0.
+
+
+
+
+
+
