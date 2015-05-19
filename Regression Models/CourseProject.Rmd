@@ -1,72 +1,57 @@
 ---
-title: "Car Analysis"
-author: "Zach Christensen"
-date: "May 17, 2015"
 output: pdf_document
 ---
-
-You work for Motor Trend, a magazine about the automobile industry. Looking at a data set of a collection of cars, they are interested in exploring the relationship between a set of variables and miles per gallon (MPG) (outcome). They are particularly interested in the following two questions:
-
-#### “Is an automatic or manual transmission better for MPG”
-#### "Quantify the MPG difference between automatic and manual transmissions"
-
-## Executive Summary
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 library(dplyr)
 library(ggplot2)
 ```
 
+# Analysis of Fuel Economy
+
+## Executive Summary
+
+Motor Trend is interested in the effects of various car attributes on miles per gallon (mpg). Specifically, they are interested in the following two questions:
+
+* Is an automatic or manual transmission better for MPG?
+* Quantify the MPG difference between automatic and manual transmissions.
+
 The dataset in question is stored in the `mtcars` variable, which contains `r ncol(mtcars)` variables for `r nrow(mtcars)` different vehicles. These variables are `r colnames(mtcars)`. This analysis is particularly interested in the impact of transmission type on fuel economy (mpg). The transmission type of the vehicle is stored in the 9th column, under the variable named `r colnames(mtcars)[9]`. This variable has two values: 0 == automatic or 1 == manual. 
 
 Figure 1 in the Appendix shows a histogram of the mile per gallon ratings for the `r nrow(mtcars)` vehicles in the dataset.
-```{r, mpgHistogram }
-mpgHist <- hist(mtcars$mpg, breaks = 18, col = "steelblue", 
-     main = "Miles Per Gallon Histogram", xlab = "Miles Per Gallon")
-```
+
+***
 
 ## A Quick Dive: Automatic or Manual
 Since the impact of this analysis is to detemine which transmission gives better mpg, we will do a quick, surface level comparison.
 
 ```{r, fig.width=4, fig.height=4 }
-average_mpg_transmission <- data.frame(
-  c(mean(filter(mtcars, am == 0)$mpg), mean(filter(mtcars, am == 1)$mpg)), 
-  c("Automatic", "Manual"))
+average_mpg_transmission <- data.frame(c(mean(filter(mtcars, am == 0)$mpg), 
+  mean(filter(mtcars, am == 1)$mpg)), c("Automatic", "Manual"))
 colnames(average_mpg_transmission) <- c("mpg", "Type")
-
-ave_mpg_plot <- ggplot(average_mpg_transmission, aes(x = Type, y = mpg, fill = Type)) + 
-  labs(x = "", y = "Average MPG", title = "Average MPG by Transmission Type") + 
-  geom_bar(stat = "identity") + theme(legend.position="none")
-
 average_mpg_transmission
 ```
 
-Voila! Manual cars have better fuel economy than automatic vehicles, ignoring all other factors. 
+**Voila! Manual cars have better fuel economy than automatic vehicles, ignoring all other factors.** 
 
-## Other Factors
+### Other Factors
 Obviously, there are many factors that impact the fuel economy of a vehicle. Let's looks at a few others here, with additional figures at the end of the report:
 
-```{r}
-## Group the cars by cylinders, compute the mean mpg for each group, then plot
-cyl_sum <- mtcars %>% group_by(cyl) %>% summarise("mpg" = mean(mpg))
-cylPlot <- ggplot(cyl_sum, aes(x = cyl, y = mpg, fill = cyl)) + geom_bar(stat = "identity") + 
-  labs(x = "", y = "Average MPG", title = "Average MPG by Number of Cylinders")
-cyl_sum
+```{r, fig.height=3}
+## Group the cars by cylinders and compute the mean mpg for each group
+mtcars %>% group_by(cyl) %>% summarise("mpg" = mean(mpg))
 
-## Plot the next two beside each other
+## mpg vs engine size and mpg vs vehicle weight
 par(mfrow = c(1, 2))
-
-## Plot the mpg against the engine size
 plot(mtcars$disp, mtcars$mpg, col = "steelblue", pch = 19, 
      xlab = "Engine Displacement", ylab = "Miles Per Gallon")
-
-## Plot the mpg against vehicle weight
 plot(mtcars$wt, mtcars$mpg, col = "steelblue", pch = 19, 
      xlab = "Vehicle Weight", ylab = "Miles Per Gallon")
 ```
 
 Miles per gallon decreases as the number cyliners increases, as the size of the engine increases, and as the weight of the vehicle increases. (Admittedly, all three of these variables are likely related; more on that later.) 
 
+***
 
 ## Linear Regressions
 
@@ -78,7 +63,7 @@ mpg.am <- lm(mpg ~ am, mtcars)
 summary(mpg.am)
 ```
 
-This model predicts automatic transmissions to get `r mpg.am$coefficients[1]` mpg, and manual transmissions to get `r mpg.am$coefficients[2]` mpg. However, the R^2^ value is fairly low, only `r summary(mpg.am)$r.squared`. Thus, this model only accounts for a small portion of the variance. We will need to add more variables to the model to obtain a better fit. 
+This model predicts automatic transmissions to get `r mpg.am$coefficients[1]` mpg, and manual transmissions to get an additional `r mpg.am$coefficients[2]` mpg. However, the R^2^ value is fairly low, only `r summary(mpg.am)$r.squared`. Thus, this model only accounts for a small portion of the variance. We will need to add more variables to the model to obtain a better fit. 
 
 ### Correlation
 
@@ -87,19 +72,49 @@ In order to choose what variables to add to the model, we will look at the corre
 sort(cor(mtcars)[1,])
 ```
 
+Here we see that weight (wt), number of cylinders (cy), and engine size (disp) all have have a similar, negative impact on mpg. Looking at these variables, we see they are all correlated with each other:
+
+```{r}
+c(cor(mtcars$disp, mtcars$cyl), cor(mtcars$cyl, mtcars$wt), cor(mtcars$wt, mtcars$disp))
+```
+
+`disp` and `cyl` are the most correlated, with `wt` and `cyl` being the least correlated. Let's add these last two to our model.
+
+```{r}
+mpg.am.wt.cyl <- lm(mpg ~ am + wt + factor(cyl), mtcars)
+summary(mpg.am.wt.cyl)
+```
+
+The intercept, `r mpg.am.wt.cyl$coefficients[1]`, is less valuable that before, as this would be for a 4 cylinders, but weighing 0 pounds. The impact of transmission type, `am`, has also been significantly descreased, resulting in an increase of only `r mpg.am.wt.cyl$coefficients[2]` miles per gallon for a manaul transmission. As expected, heavier cars get lower mpg (`r mpg.am.wt.cyl$coefficients[3]` miles per gallon per 1,000 pounds), and the more cylinders a car has, the lower it's fuel economy.
+
+***
+
+## Summary
+It appears manual cars provide better gas mileage than automatic cars, showing a `r mpg.am.wt.cyl$coefficients[2]` increase in miles per gallon in our last analysis. However, the standard error on this estmiate is large (`r summary(mpg.am.wt.cyl)$coefficients["am",2]`), and the 95% confidence for transmission contains 0: [`r confint(mpg.am.wt.cyl)["am",]`].
+
+Thus, it appears that the impact of transmission type on fuel economy is minimal, with other factors, such as `wt` and `cyl`, having a significantly greater influence. In fact, when these two factors are grouped by transmission type, we see that the manual cars in the data set also happen to be lighter and have few cylinders. 
+
+```{r}
+cyl_am <- mtcars %>% group_by(am) %>% summarise("Avg. Cyl" = mean(cyl))
+wt_am <- mtcars %>% group_by(am) %>% summarise("Avg. Wt" = mean(wt))
+
+inner_join(cyl_am, wt_am, disp_am, by = "am")
+```
+
+***
+
 ## Supporting Figures
 
-Figure 1: MPG Histogram
-```{r echo=FALSE}
-mpgHist
+```{r, mpgHistogram, fig.height=4}
+hist(mtcars$mpg, breaks = 18, col = "steelblue", 
+     main = "Figure 1: Miles Per Gallon Histogram", xlab = "Miles Per Gallon")
 ```
 
-Figure 2: Average MPG By Transmission Type
-```{r echo=FALSE}
-ave_mpg_plot
+### Figure 2: Summary Plots for mpg ~ am + wt + cyl
+
+```{r}
+par(mfrow = c(2,2))
+plot(mpg.am.wt.cyl)
 ```
 
-Figure 3:
-```{r echo=FALSE}
-cylPlot
-```
+
