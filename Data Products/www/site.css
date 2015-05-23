@@ -1,0 +1,14 @@
+#day {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  width: 100% !important;
+  text-align: center;
+}
+
+.label {
+  width: 100% !important;
+}
+
+table.data {
+  width: 100% !important;
+}
