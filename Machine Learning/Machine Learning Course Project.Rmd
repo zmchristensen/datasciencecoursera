@@ -1,0 +1,150 @@
+---
+title: "Machine Learning Course Project"
+author: "Zach Christensen"
+date: "May 19, 2015"
+output: html_document
+---
+
+```{r, libraries, message=FALSE, warning=FALSE}
+set.seed(2015)
+library(caret)
+library(randomForest)
+library(rpart)
+library(rpart.plot)
+library(rattle)
+```
+
+## Executive Summary
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset). 
+
+The goal of this analysis is to predict which class of activity was performed based on the raw data collected from the sensors. The ability to do this would significantly braoden the impact of activity and health trackers, allowing people to ask questions about quality, not just quantity.
+
+***
+
+## Data Preprocessing
+The data is located in a CSV file that can be downloaded from the link shown below. This is done, and the file is loaded into R.
+
+```{r, loadData1, cache=FALSE}
+download.file("http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", "training.csv")
+training <- read.csv("training.csv")
+```
+
+```{r, loadData2}
+inTrain <- createDataPartition(training$classe, p = 0.75, list = FALSE)
+train <- training[inTrain,]
+test <- training[-inTrain,]
+```
+
+The initial training data set of [`r dim(training)`] is split into a training and testing set using the caret libraries `createDataPartion` function, resulting in a new training set of size [`r dim(train)`].
+
+The data set is large, containing numerous readings for a significant number of variables. After examining the different columns, we notice the first seven columns aren't important for the analysis: `r colnames(train[,1:7])`. These columns just identify who performed the test and when the test occurred, things we don't want to base our model on. The first seven columns will be dropped.
+
+```{r, preprocess1, cache=TRUE}
+train <- train[,-c(1:7)]
+test <- test[,-c(1:7)]
+```
+
+Looking at the data more closely, we see that some columns have a significant number of NAs. With so many data points missing, these variables won't make very good predictors. 
+
+```{r, preprocess2, cache=TRUE}
+## Compute the percentage of NA values in each column and print as a table
+na_count <- sapply(train, function (n) { sum(is.na(n))})
+na_table <- as.data.frame(table(na_count))
+na_table
+```
+
+As we can see, there are `r na_table[1,2]` columns with no NA values, with another `r na_table[2,2]` columns containing `r na_table[2,1]` NAs. Let's drop those columns.
+
+```{r, preprocess3, cache=TRUE}
+## Remove columns that contain mostly NAs
+badColumns <- c()
+for (i in 1:ncol(train)) {
+    if (sum(is.na(train[,i])) == na_table[2,1]) {
+        badColumns <- c(badColumns, i)
+    }
+}
+train <- train[,-badColumns]
+test <- test[,-badColumns]
+```
+
+Variables that don't have much variance aren't super useful for the model. We can use the `nearZeroVar` function from the `caret` package to identify variables that have little variance, then remove those coulmns. 
+
+```{r, preprocess4, cache=TRUE}
+## Remove columns that have Near Zero Variance
+nzv <- nearZeroVar(train, saveMetrics = TRUE)
+train <- train[,-which(nzv$nzv)]
+test <- test[,-which(nzv$nzv)]
+```
+
+Our data set now consists of `r ncol(train)` variables, none of which contain NA values or variables with variance near zero. 
+
+***
+
+## Predictive Models
+
+There are countless machine learning algorithms that could be used to make predictions. Given that this problem is attempting to classify variables into outcomes, we will generate a Decision Tree and a Random Forest to attempt to predict the `classe` of activity.
+
+### Decision Tree
+
+```{r, decisionTree, cache=TRUE}
+## Train the model from the train data set
+rpartModel <- train(classe ~ ., train, method = "rpart", trControl=trainControl(method = "cv", number = 4))
+
+## Plot the decision tree
+fancyRpartPlot(rpartModel$finalModel)
+```
+
+
+### Random Forest
+
+```{r, randomForest, cache=TRUE}
+## Train the model from the train data set
+rfModel <- train(classe ~ ., train, method = "rf", trControl=trainControl(method = "cv", number = 4))
+```
+
+***
+
+## Results
+
+### In Sample Error
+One important metric of a model is the in sample error, or the error rate when the model is applied to the data set that trained it. We do this by passing the `train` data to R's `predict` and `confusionMatrix` methods.
+
+```{r, inSampleError}
+## Decision Tree
+rpartTrainPredict <- predict(rpartModel$finalModel, train, type = "class")
+rpartTrainMatrix <- confusionMatrix(rpartTrainPredict, train$classe)
+
+## Random Forest
+rfTrainPredict <- predict(rfModel$finalModel, train, type = "class")
+rfTrainMatrix <- confusionMatrix(rfTrainPredict, train$classe)
+```
+
+Looking at the accuracy for the Decision Tree, we see the accuracy is `r rpartTrainMatrix$overall[[1]]`, which gives an in sample error rate of `r 1 -rpartTrainMatrix$overall[[1]]`,  which is pretty terrible. Since in sample errors are usually optimistic about actual model performance, we shouldn't expect great things from this model...
+
+The Random Forest fairs much better, with an accuracy of `r rfTrainMatrix$overall[[1]]` and an in sample error rate of `r 1 - rfTrainMatrix$overall[[1]]`! However, accuracy this high comes with a grain of salt, as the model may be over fitted to the noise in the test data set. We'll have to remember this as we look at the performance of this model on the test set.
+
+### Out of Sample Error
+Another important part of a model is the out of sample error, or the model's accuracy when applied to a new data set. We do this using the `predict` and `confusionMatrix` methods like before, but pass in the `test` data set instead of the `train` data.
+
+```{r, outSampleError}
+## Decision Tree
+rpartPredict <- predict(rpartModel$finalModel, test, type = "class")
+rpartMatrix <- confusionMatrix(rpartPredict, test$classe)
+rpartMatrix
+
+## Random Forest
+rfPredict <- predict(rfModel$finalModel, test, type = "class")
+rfMatrix <- confusionMatrix(rfPredict, test$class)
+rfMatrix
+```
+
+Looking at the output from `confusionMatrix`, we see that both algorithms do 'worse' on the test data set compared to the train data set, which is to be expected. The Decision Tree yields an accuracy of `r rpartMatrix$overall[[1]]`, and the Random Forest is `r rfMatrix$overall[[1]]` accurate. This gives out of sample error rates of `r 1 - rpartMatrix$overall[[1]]` and `r 1 - rfMatrix$overall[[1]]`, respectively. The high accuracy (and low out of sample error) of the Random Forest model on the test data set (at least partially) mitigates the aforementioned concern about over fitting. 
+
+***
+
+### Conclusions
+
+When comparing the two models, the Random Forest model undoubtedly does a better job at predicting `classe` than the Decision Tree; it has a very high accuracy rating for both the `train` and `test` sets, which means the in sample and out of sample error rates are very low. 
+
+One thing to consider, which isn't addressed in the above analysis, is the impact the specific subjects had on the analysis. While the initial data was split into `train` and `test` sets, these sets were comprised of the same individuals: `r unique(training$user_name)`. This likely causes the model to be biased toward these individuals specific 'style' of performing the analysis incorrectly. The out of sample error rate will likely increase if this algorithm was used with data from a different group of participants.  
+
