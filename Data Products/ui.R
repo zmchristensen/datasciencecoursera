@@ -9,7 +9,9 @@ shinyUI(fluidPage(
   ),
 
   column(12,
-         h2("2014 Ebola Outbreak: Cases and Deaths", class="well")
+         h2("2014 Ebola Outbreak: Cases and Deaths", class="well"),
+         p("This Shiny app takes data from the recent Ebola outbreak and tracks it over time. 
+           Use the slider to see the spread of the virus as a function of days since the initial infection.")
   ),
   column(6,
          div(class="well",
