@@ -26,8 +26,8 @@ shinyUI(fluidPage(
          )
   ),
   column(6,
-         htmlOutput("map")
-         
+         htmlOutput("column"),
+         htmlOutput("map")         
   )
    
 ))
