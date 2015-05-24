@@ -1,24 +1,9 @@
 library(shiny)
-
-# Plotting 
-library(ggplot2)
-# library(rCharts)
-library(ggvis)
-suppressPackageStartupMessages(library(googleVis))
-
-# Data processing libraries
-# library(data.table)
 library(reshape2)
 library(dplyr)
 library(tidyr)
 library(lubridate)
-
-# Required by includeMarkdown
-# library(markdown)
-
-# It has to loaded to plot ggplot maps on shinyapps.io
-# library(mapproj)
-# library(maps)
+library(googleVis)
 
 # Load data
 data <- read.csv("graph_data.csv")
@@ -30,9 +15,14 @@ shinyServer(
   function(input, output, session) {
 
     dayValue <- reactive({
-      paste(input$days)
+      # paste(input$days)
+      paste(dayOptions[which.min(abs(dayOptions - input$days))])
     })
-
+    
+    newData <- reactive({
+      data %>% filter(Day == dayValue())
+    })
+    
     updateSliderInput(session, 
       "days",
       max = data[nrow(data),2])
@@ -43,23 +33,26 @@ shinyServer(
     
     output$day <- renderText({
       paste("<strong>Showing data from", 
-            filter(data, Day == dayValue())[1,1],
+            (newData())[1,1],
             "</strong>")
     })
     
     output$table <- renderTable({
-      d <- data %>% filter(Day == dayValue())
-      d[,-c(1:2)]
-      dcast(d, Country ~ Type)
+      newData()[,-c(1:2)]
+      dcast(newData(), Country ~ Type)
     })
     
     output$map <- renderGvis({
-      gvisGeoChart(data %>% filter(Day == dayValue()), 
+      gvisGeoChart(newData() %>% filter(Type == "Cases"), 
                    locationvar = "Country", 
-                   colorvar = "TotalValue", 
+                   colorvar = "TotalValue",
                    options = list(
                      width = 400, height = 400)
                    )      
+    })
+    
+    output$column <- renderGvis({
+      gvisColumnChart(dcast(newData(), Country ~ Type))
     })
   } 
 )
