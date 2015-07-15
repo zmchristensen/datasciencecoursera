@@ -8,6 +8,6 @@
 .Rproj.user/
 .RData
 
-# Captstone Data
-.zip
+# Capstone Data
+*.zip
 final/
