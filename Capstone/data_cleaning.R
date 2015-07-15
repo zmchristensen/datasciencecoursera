@@ -60,10 +60,26 @@ analyzeData <- function(result) {
   with(dens, polygon(x=c(x[c(x1,x1:x2,x2)]), y= c(0, y[x1:x2], 0), col="steelblue"))
 }
 
+prepData <- function() {
+  
+  ## download zip file if not present
+  destFile <- "Coursera-SwiftKey.zip"
+  if (!file.exists(destFile)) {
+    downloadUrl <- "http://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip"
+    download.file(downloadUrl, "Coursera-SwiftKey.zip")    
+  }
+  
+  ## expand zip archive if not done
+  zipFile <- "final"
+  if (!file.exists(zipFile)) {
+    unzip(destFile)    
+  }
+}
+
 ## Read the file and save as corpus
-read <- function(fileName, lines) {
+read <- function(sourceFile, outputDir, dataSource, lines) {
     ## open the file, read the text into memory, and close connection
-    con <- file(paste(fileName, ".txt", sep = ""))
+    con <- file(sourceFile)
     text <- readLines(con, lines)
     close(con)
     
@@ -93,12 +109,12 @@ read <- function(fileName, lines) {
     corpus <- tm_map(corpus, stemDocument)
     
     ## Save corpus
-    saveFile = paste(fileName, "/corpus.RData", sep = "")
+    saveFile = paste(outputDir, "/", dataSource, "Corpus.RData", sep = "")
     saveRDS(corpus, file = saveFile)
 }
 
-ngram <- function(fileName) {
-  corpus <- readRDS(paste(fileName, "/corpus.RData", sep = ""))
+ngram <- function(outputDir, dataSource) {
+  corpus <- readRDS(paste(outputDir, "/", dataSource  ,"Corpus.RData", sep = ""))
   
   corpus <- data.frame(unlist(sapply(corpus,`[`, "content")), stringsAsFactors = FALSE)
   
@@ -118,19 +134,26 @@ ngram <- function(fileName) {
   pentagram <- makeNgram(corpus, 5, 5)
   
   ## save the ngrams
-  saveRDS(unigram, file = paste(fileName, "/unigram.RData", sep = ""))
-  saveRDS(bigram, file = paste(fileName, "/bigram.RData", sep = ""))
-  saveRDS(trigram, file = paste(fileName, "/trigram.RData", sep = ""))
-  saveRDS(tetragram, file = paste(fileName, "/tetragram.RData", sep = ""))
-  saveRDS(pentagram, file = paste(fileName, "/pentagram.RData", sep = ""))
+  saveRDS(unigram, file = paste(outputDir, "/", dataSource, "-unigram.RData", sep = ""))
+  saveRDS(bigram, file = paste(outputDir, "/", dataSource, "-bigram.RData", sep = ""))
+  saveRDS(trigram, file = paste(outputDir, "/", dataSource, "-trigram.RData", sep = ""))
+  saveRDS(tetragram, file = paste(outputDir, "/", dataSource, "-tetragram.RData", sep = ""))
+  saveRDS(pentagram, file = paste(outputDir, "/", dataSource, "-pentagram.RData", sep = ""))
 }
 
-process <- function(dataSource, lines = 10000) {
+process <- function(fileNumber = 1, lines = 10000) {
   
-  dir.create(paste(getwd(), "/", dataSource, sep = ""), showWarnings = FALSE)
+  prepData()
   
-  read(dataSource, lines)
-  ngram(dataSource)
+  ## create the output directory
+  output <- "output"
+  dir.create(paste(getwd(), "/", output, sep = ""), showWarnings = FALSE)
+  
+  types <- c("blogs", "news", "tweets")
+  sources <- c("final/en_US/en_US.blogs.txt", "final/en_US/en_US.news.txt", "final/en_US/en_US.twitter.txt")
+  
+  read(sources[fileNumber], output, types[fileNumber], lines)
+  ngram(output, types[fileNumber])
 }
 
 
