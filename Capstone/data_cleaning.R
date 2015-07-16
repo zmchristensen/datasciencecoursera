@@ -88,8 +88,6 @@ read <- function(sourceFile, outputDir, dataSource, lines) {
     corpus <- Corpus(VectorSource(text))
     rm(text)
     
-    corpus
-    
     ## Replace some special characters with a space
     toSpace <- content_transformer(function(x, pattern) {
       gsub(pattern, " ", x)
@@ -113,6 +111,10 @@ read <- function(sourceFile, outputDir, dataSource, lines) {
     ## Save corpus
     saveFile = paste(outputDir, "/", dataSource, "Corpus.RData", sep = "")
     saveRDS(corpus, file = saveFile)
+    
+    rm(toSpace)
+    rm(saveFile)
+    rm(corpus)
 }
 
 ngram <- function(outputDir, dataSource) {
@@ -120,27 +122,21 @@ ngram <- function(outputDir, dataSource) {
   
   corpus <- data.frame(unlist(sapply(corpus,`[`, "content")), stringsAsFactors = FALSE)
   
-  makeNgram <- function(corpus, min, max) {
+  ## Contruct and save the ngrams
+  makeNgram <- function(corpus, min, max, saveFile) {
       n <- NGramTokenizer(corpus, control = Weka_control(max = max, min = min))
       n <- data.frame(table(n))
       colnames(n) <- c("ngram", "count")
       
-      n
+      saveRDS(n, file = saveFile)
+      rm(n)
   }
   
-  ## Contruct the ngrams
-  unigram <- makeNgram(corpus, 1, 1)
-  bigram <- makeNgram(corpus, 2, 2)
-  trigram <- makeNgram(corpus, 3, 3)
-  tetragram <- makeNgram(corpus, 4, 4)
-  pentagram <- makeNgram(corpus, 5, 5)
-  
-  ## save the ngrams
-  saveRDS(unigram, file = paste(outputDir, "/", dataSource, "-unigram.RData", sep = ""))
-  saveRDS(bigram, file = paste(outputDir, "/", dataSource, "-bigram.RData", sep = ""))
-  saveRDS(trigram, file = paste(outputDir, "/", dataSource, "-trigram.RData", sep = ""))
-  saveRDS(tetragram, file = paste(outputDir, "/", dataSource, "-tetragram.RData", sep = ""))
-  saveRDS(pentagram, file = paste(outputDir, "/", dataSource, "-pentagram.RData", sep = ""))
+  makeNgram(corpus, 1, 1, paste(outputDir, "/", dataSource, "-unigram.RData", sep = ""))
+  makeNgram(corpus, 2, 2, paste(outputDir, "/", dataSource, "-bigram.RData", sep = ""))
+  makeNgram(corpus, 3, 3, paste(outputDir, "/", dataSource, "-trigram.RData", sep = ""))
+  makeNgram(corpus, 4, 4,paste(outputDir, "/", dataSource, "-tetragram.RData", sep = ""))
+  makeNgram(corpus, 5, 5,paste(outputDir, "/", dataSource, "-pentagram.RData", sep = ""))
 }
 
 process <- function(fileNumber = 1, lines = 10000) {
