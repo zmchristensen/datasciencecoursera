@@ -9,5 +9,5 @@
 .RData
 
 # Captstone Data
-.zip
+*.zip
 final/
