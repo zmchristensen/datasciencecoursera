@@ -1,6 +1,8 @@
 library(tm)
 library(SnowballC)
 library(RWeka)
+library(reshape)
+library(dplyr)
 
 readData <- function(fileName) {
     ## Define ngram arrays

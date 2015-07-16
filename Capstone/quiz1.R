@@ -68,8 +68,8 @@ q6 <- function(fileName) {
   numLines <- system(command=com, intern=TRUE)
   
   ## numLines <- 1000000
-  count <- 0
-  pattern <- "A computer once beat me at chess, but it was no match for me at kickboxing"
+  match <- ""
+  pattern <- "After the ice bucket challenge Louis will push his long wet hair out of his eyes with his little"
   
   ## Loop over file
   for (i in 1:numLines) {
@@ -77,14 +77,15 @@ q6 <- function(fileName) {
     ## do something on a line of data 
     line <- tolower(readLines(con, 1, skipNul = TRUE))
     if (grepl(pattern, line, ignore.case = TRUE)) {
-      count <- count + 1
+      match <- line
+      break
     }
   }
   
   ## Close connection
   close(con)
   
-  count  
+  match  
 }
 
 q4 <- function(fileName) {
