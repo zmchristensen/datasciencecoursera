@@ -1,6 +1,8 @@
 library(tm)
 library(SnowballC)
 library(RWeka)
+library(reshape)
+library(dplyr)
 
 readData <- function(fileName) {
     ## Define ngram arrays
@@ -118,7 +120,7 @@ read <- function(sourceFile, outputDir, dataSource, lines) {
 ngram <- function(outputDir, dataSource) {
   corpus <- readRDS(paste(outputDir, "/", dataSource  ,"Corpus.RData", sep = ""))
   
-  corpus <- data.frame(unlist(sapply(corpus,`[`, "content")), stringsAsFactors = FALSE)
+  corpus <- unlist(sapply(corpus,`[`, "content"))
   
   ## Contruct and save the ngrams
   makeNgram <- function(corpus, min, max, saveFile) {
