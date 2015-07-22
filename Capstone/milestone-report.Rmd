@@ -1,0 +1,171 @@
+---
+title: "Coursera Milestone Report"
+author: "Zach Christensen"
+date: "July 17, 2015"
+output: html_document
+---
+
+
+## Summary
+This report is a progress update on the creation of a text predication app being created for the John Hopkins Data Science Specialization on Coursera. This report outlines the work completed to load and clean the data as well as the initial exploratory analysis completed. 
+
+## Data Processing
+
+#### Load Libraries
+```{r libraries, message=FALSE, warning=FALSE}
+library(tm)
+library(SnowballC)
+library(RWeka)
+library(reshape)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(wordcloud)
+```
+
+#### Examine Dataset
+```{r, fileLength, cache = TRUE}
+files <- c("final/en_US/en_US.blogs.txt", "final/en_US/en_US.news.txt", "final/en_US/en_US.twitter.txt")
+
+## Examine files for number of lines and size
+counts <- c()
+fileSize <- c()
+for (i in 1:length(files)) {
+  com <- paste("wc -l ", files[i], " | awk '{ print $1 }'", sep="")
+  counts <- c(counts, paste(system(command=com, intern=TRUE), "lines"))
+  fileSize <- c(fileSize, paste(as.integer((file.info(files[i])$size) / (1024 ^ 2)), "Mbs"))
+}
+cbind(files, counts, fileSize)
+```
+
+#### Sample Data
+The following function is used to sample data from the files, reading a set number of lines and loading that data into a corpus. This corpus is then cleaned using the `tm` library, removing spaces, numbers, punctuation, and whitespace. The document is then stemmed using the `SnowballC` library. 
+```{r sampleData}
+text <- c()
+
+for (i in 1:length(files)) {
+  ## open the file, read the text into memory, and close connection
+  con <- file(files[i])
+  text <- c(text, readLines(con, 1000))
+  close(con)      
+}
+
+corpus <- Corpus(VectorSource(text))
+rm(text)
+
+## Replace some special characters with a space
+toSpace <- content_transformer(function(x, pattern) {
+  gsub(pattern, " ", x)
+})
+corpus <- tm_map(corpus, toSpace, "/|@|\\|")
+
+## convert to lower case, remove numbers and punctuation
+corpus <- tm_map(corpus, content_transformer(tolower))
+
+## remove stopwords before punctuation removed
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+
+## remove numbers, punctuation, and whitespace
+corpus <- tm_map(corpus, removeNumbers)
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, stripWhitespace)
+
+## Stem the document with SnowballC
+corpus <- tm_map(corpus, stemDocument)
+
+inspect(corpus[c(50,1050,2050)])
+```
+
+The corpus contains the `r length(corpus)` lines read from the files, each stored as a document. As shown above, the text has been processed to some extent, the most notable change being the lack of `stop words` and word endings (the result of stemming).
+
+## Exploratory Analysis
+
+#### Document Length
+Given the three different sources of text, there will likely be some variation in the length of documents (number of words). Below the input is grouped by source type (1000 lines from each type), and some summary statistics are calculated.
+
+```{r, documentLength1}
+type <- c(rep("blogs", 1000), rep("news", 1000), rep("tweets", 1000))
+
+termCount <- colSums(as.matrix(TermDocumentMatrix(corpus)))
+termCount <- data.frame(termCount, type, stringsAsFactors = FALSE)
+
+termCount %>% group_by(type) %>% summarize(mean = mean(termCount), max = max(termCount))
+```
+
+```{r, documentLength2}
+ggplot(termCount, aes(termCount, fill = type)) + geom_histogram(alpha = 0.5, position = 'identity', binwidth = 1) + labs(title = "Histogram of Document Length by Type", x = "Word Count", y = "Count")
+```
+
+As shown above, tweets are, on average, the shortest document type and blogs are, on average, the longest.
+
+#### ngrams
+Ngrams are created from each data source to examine the most common word groups.
+```{r, ngrams}
+blog_corpus <- unlist(sapply(corpus[1:1000],`[`, "content"))
+blog_bigrams <- NGramTokenizer(blog_corpus, control = Weka_control(max = 2, min = 2))
+blog_trigrams <- NGramTokenizer(blog_corpus, control = Weka_control(max = 3, min = 3))
+
+news_corpus <- unlist(sapply(corpus[1001:2000],`[`, "content"))
+news_bigrams <- NGramTokenizer(news_corpus, control = Weka_control(max = 2, min = 2))
+news_trigrams <- NGramTokenizer(news_corpus, control = Weka_control(max = 3, min = 3))
+
+tweet_corpus <- unlist(sapply(corpus[2001:3000],`[`, "content"))
+tweet_bigrams <- NGramTokenizer(tweet_corpus, control = Weka_control(max = 2, min = 2))
+tweet_trigrams <- NGramTokenizer(tweet_corpus, control = Weka_control(max = 3, min = 3))
+
+## Used to find top ten
+topTen <- function(ngram) {
+  tableNgram <- data.frame(table(ngram))
+  tableNgram[order(tableNgram$Freq, decreasing = TRUE),][1:10,]
+}
+
+ten_blog_bigram <- topTen(blog_bigrams)
+ten_blog_trigram <- topTen(blog_trigrams)
+
+ten_news_bigram <- topTen(news_bigrams)
+ten_news_trigram <- topTen(news_trigrams)
+
+ten_tweet_bigram <- topTen(tweet_bigrams)
+ten_tweet_trigram <- topTen(tweet_trigrams)
+```
+
+Histogram of top words from each source:
+```{r histogram, fig.height=7}
+grid.arrange(ggplot(data=ten_blog_bigram, aes(x=ngram, y=Freq)) +
+      geom_bar(fill="steelblue", stat="identity") + labs(title = "Blogs Bigrams") +
+      guides(fill=FALSE) + theme(axis.text.x = element_text(angle = 90, hjust = 1)),
+    ggplot(data=ten_news_bigram, aes(x=ngram, y=Freq)) +
+      geom_bar(fill="steelblue", stat="identity") + labs(title = "News Bigrams") +
+      guides(fill=FALSE) + theme(axis.text.x = element_text(angle = 90, hjust = 1)),
+    ggplot(data=ten_tweet_bigram, aes(x=ngram, y=Freq)) +
+      geom_bar(fill="steelblue", stat="identity") + labs(title = "Tweets Bigrams") +
+      guides(fill=FALSE) + theme(axis.text.x = element_text(angle = 90, hjust = 1)),
+    ggplot(data=ten_blog_trigram, aes(x=ngram, y=Freq)) +
+      geom_bar(fill="steelblue", stat="identity") + labs(title = "Blogs Trigrams") +
+      guides(fill=FALSE) + theme(axis.text.x = element_text(angle = 90, hjust = 1)),
+    ggplot(data=ten_news_trigram, aes(x=ngram, y=Freq)) +
+      geom_bar(fill="steelblue", stat="identity") + labs(title = "News Trigrams") +
+      guides(fill=FALSE) + theme(axis.text.x = element_text(angle = 90, hjust = 1)),
+    ggplot(data=ten_tweet_trigram, aes(x=ngram, y=Freq)) +
+      geom_bar(fill="steelblue", stat="identity") + labs(title = "Tweet Trigrams") +
+      guides(fill=FALSE) + theme(axis.text.x = element_text(angle = 90, hjust = 1)),
+    nrow=2)
+``` 
+
+#### Word Cloud
+```{r wordCloud, warning=FALSE}
+tdm <- as.matrix(TermDocumentMatrix(corpus))
+freqs<-rowSums(tdm)
+
+wc_df <- data.frame(word = names(freqs), count = freqs)
+wordcloud(wc_df$word, wc_df$count, c(5, 0.3), 50, random.order = FALSE, colors = brewer.pal(5, "Set2"))
+
+```
+
+## Predication Algorithm
+The plan for the predication algorithm is to generate multiple ngrams from a sample of the input files. These ngrams will be of length one to five (unigrams to pentagrams). The algorithm will provide the most weight to the long ngrams, since these will have the most *context* for the predication; shorter ngrams will influence the results based on frequencies of word groupings (or individual words for the unigrams).
+
+
+
+
+
