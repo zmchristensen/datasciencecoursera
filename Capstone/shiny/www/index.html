@@ -1,0 +1,39 @@
+<html>
+
+<head>
+  <script src="shared/jquery.js" type="text/javascript"></script>
+  <script src="shared/shiny.js" type="text/javascript"></script>
+  <link rel="stylesheet" type="text/css" href="bootstrap.css"/>
+  <link rel="stylesheet" type="text/css" href="site.css"/>
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- TITLE -->
+    <h1 id="title">Text Prediction</h1>
+
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <div class="form-group shiny-input-container">
+          <input id="text" type="text" class="form-control shiny-bound-input" value="Enter text...">
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <table id="table" name="table" class="table table-bordered shiny-html-output"></table>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <span id="sentence" class="shiny-text-output shiny-bound-output"></p>
+      </div>
+    </div>
+
+  </div>
+</body>
+
+</html>
