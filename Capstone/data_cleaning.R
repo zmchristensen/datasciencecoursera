@@ -4,64 +4,6 @@ library(RWeka)
 library(reshape)
 library(dplyr)
 
-readData <- function(fileName) {
-    ## Define ngram arrays
-    unigrams <- data_frame()
-    bigrams <- data_frame()
-    trigrams <- data_frame()
-  
-  
-    ## Get the number of lines
-    com <- paste("wc -l ", fileName, " | awk '{ print $1 }'", sep="")
-    numLines <- system(command=com, intern=TRUE)
-    
-    ## Open Connections
-    con <- file(fileName, "r") 
-    
-    numLines <- 100
-    
-    
-    ## Loop over file
-    for (i in 1:numLines) {
-        ## do something on a line of data 
-        line <- tolower(readLines(con, 1))
-        line <- gsub("[^[:alnum:][:space:]]", "", line)
-      
-        w <- strsplit(line, " ", fixed = TRUE)[[1L]]
-        
-        ## Word tri-grams pasted together:
-        ## unigrams <- append(unigrams, vapply(ngrams(w, 1L), paste, "", collapse = " "))
-        ## bigrams <- append(bigrams, vapply(ngrams(w, 2L), paste, "", collapse = " "))
-        ## trigrams <- append(trigrams, vapply(ngrams(w, 3L), paste, "", collapse = " "))
-    
-        unigrams <- rbind(unigrams, ngrams(w, 1L))
-        bigrams <- rbind(bigrams, ngrams(w, 2L))
-        trigrams <- rbind(trigrams, ngrams(w, 3L))
-    }
-    
-    ## Close connection
-    close(con)
-    
-    ## list(unlist(unigrams), unlist(bigrams), unlist(trigrams))
-    list((unigrams), (bigrams), (trigrams))
-}
-
-analyzeData <- function(result) {
- 
-  t1 <- table(result[[1]])
-  dens <- density(t1)
-  
-  ## hist(t1, breaks = 25)
-  plot(dens)
-  
-  low <- quantile(t1, 0.0)
-  high <- quantile(t1, 0.90)
-  
-  x1 <- min(which(dens$x >= low))  
-  x2 <- max(which(dens$x <  high))
-  with(dens, polygon(x=c(x[c(x1,x1:x2,x2)]), y= c(0, y[x1:x2], 0), col="steelblue"))
-}
-
 prepData <- function() {
   
   ## download zip file if not present
