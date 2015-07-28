@@ -3,6 +3,8 @@ library(shiny)
 # Define server logic required to draw a histogram
 shinyServer(function(input, output, session) {
   
+  trim.leading <- function (x)  sub("^\\s+", "", x)
+  
   createTable <- function(text) {
     if (nchar(text) > 0) {
       words <- strsplit(text, split = " ")
@@ -22,8 +24,20 @@ shinyServer(function(input, output, session) {
     input$text
   })
   
-  observeEvent(input$action, {
-    updateTextInput(session, inputId = "text", value = paste(input$text, "new", sep = " "))
+  
+  observeEvent(input$first, {
+    n <- trim.leading(paste(input$text, "first", sep = " "))
+    updateTextInput(session, inputId = "text", value = n)
   })
     
+  observeEvent(input$second, {
+    n <- trim.leading(paste(input$text, "second", sep = " "))
+    updateTextInput(session, inputId = "text", value = n)
+  })
+  
+  observeEvent(input$third, {
+    n <- trim.leading(paste(input$text, "third", sep = " "))
+    updateTextInput(session, inputId = "text", value = n)
+  })
+  
 })
