@@ -1,11 +1,33 @@
 
 
-loadNgrams <- function() {
-  uni <- preprocessGram("output/blogs-unigram.RData")
-  bi <- preprocessGram("output/blogs-bigram.RData")
-  tri <- preprocessGram("output/blogs-trigram.RData")
-  tetra <- preprocessGram("output/blogs-tetragram.RData")
-  penta <- preprocessGram("output/blogs-pentagram.RData")  
+loadNgrams <- function(dir) {
+  types <- c("blogs", "news", "tweets")
+  
+  uni <- rbind(
+    preprocessGram(paste(dir, "/", types[1], "-unigram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[2], "-unigram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[3], "-unigram.RData", sep = ""))
+  )
+  bi <- rbind(
+    preprocessGram(paste(dir, "/", types[1], "-bigram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[2], "-bigram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[3], "-bigram.RData", sep = ""))
+  )
+  tri <- rbind(
+    preprocessGram(paste(dir, "/", types[1], "-trigram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[2], "-trigram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[3], "-trigram.RData", sep = ""))
+  )
+  tetra <- rbind(
+    preprocessGram(paste(dir, "/", types[1], "-tetragram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[2], "-tetragram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[3], "-tetragram.RData", sep = ""))
+  )
+  penta <- rbind(
+    preprocessGram(paste(dir, "/", types[1], "-pentagram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[2], "-pentagram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[3], "-pentagram.RData", sep = ""))
+  )  
 }
 
 preprocessGram <- function(fileName) {
@@ -40,7 +62,7 @@ sanitize <- function(text) {
   corpus <- tm_map(corpus, content_transformer(tolower))
   
   ## remove stopwords before punctuation removed
-  corpus <- tm_map(corpus, removeWords, stopwords("english"))
+  ## corpus <- tm_map(corpus, removeWords, stopwords("english"))
   
   ## remove numbers, punctuation, and whitespace
   corpus <- tm_map(corpus, removeNumbers)
