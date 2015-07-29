@@ -81,19 +81,20 @@ ngram <- function(outputDir, dataSource) {
   makeNgram(corpus, 5, 5,paste(outputDir, "/", dataSource, "-pentagram.RData", sep = ""))
 }
 
-process <- function(fileNumber = 1, lines = 10000) {
+process <- function(lines = 10000) {
   
   prepData()
   
   ## create the output directory
-  output <- "output"
+  output <- "nostop"
   dir.create(paste(getwd(), "/", output, sep = ""), showWarnings = FALSE)
   
   types <- c("blogs", "news", "tweets")
   sources <- c("final/en_US/en_US.blogs.txt", "final/en_US/en_US.news.txt", "final/en_US/en_US.twitter.txt")
-  
-  read(sources[fileNumber], output, types[fileNumber], lines)
-  ngram(output, types[fileNumber])
+  for (fileNumber in 1:length(sources)) {
+    read(sources[fileNumber], output, types[fileNumber], lines)
+    ngram(output, types[fileNumber])    
+  }
 }
 
 
