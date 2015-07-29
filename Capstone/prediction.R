@@ -1,6 +1,5 @@
 
-
-loadNgrams <- function(dir) {
+loadNgrams <- function(dir, updateProgress = NULL) {
   types <- c("blogs", "news", "tweets")
   
   uni <- rbind(
@@ -8,26 +7,45 @@ loadNgrams <- function(dir) {
     preprocessGram(paste(dir, "/", types[2], "-unigram.RData", sep = "")),
     preprocessGram(paste(dir, "/", types[3], "-unigram.RData", sep = ""))
   )
+  if (is.function(updateProgress)) {
+    updateProgress(detail = "Loaded unigrams")
+  }
+  
   bi <- rbind(
     preprocessGram(paste(dir, "/", types[1], "-bigram.RData", sep = "")),
     preprocessGram(paste(dir, "/", types[2], "-bigram.RData", sep = "")),
     preprocessGram(paste(dir, "/", types[3], "-bigram.RData", sep = ""))
   )
+  if (is.function(updateProgress)) {
+    updateProgress(detail = "Loaded bigrams")
+  }
+  
   tri <- rbind(
     preprocessGram(paste(dir, "/", types[1], "-trigram.RData", sep = "")),
     preprocessGram(paste(dir, "/", types[2], "-trigram.RData", sep = "")),
     preprocessGram(paste(dir, "/", types[3], "-trigram.RData", sep = ""))
   )
+  if (is.function(updateProgress)) {
+    updateProgress(detail = "Loaded trigrams")
+  }
+  
   tetra <- rbind(
     preprocessGram(paste(dir, "/", types[1], "-tetragram.RData", sep = "")),
     preprocessGram(paste(dir, "/", types[2], "-tetragram.RData", sep = "")),
     preprocessGram(paste(dir, "/", types[3], "-tetragram.RData", sep = ""))
   )
+  if (is.function(updateProgress)) {
+    updateProgress(detail = "Loaded tetragrams")
+  }
+  
   penta <- rbind(
     preprocessGram(paste(dir, "/", types[1], "-pentagram.RData", sep = "")),
     preprocessGram(paste(dir, "/", types[2], "-pentagram.RData", sep = "")),
     preprocessGram(paste(dir, "/", types[3], "-pentagram.RData", sep = ""))
   )  
+  if (is.function(updateProgress)) {
+    updateProgress(detail = "Loaded pentagrams")
+  }
 }
 
 preprocessGram <- function(fileName) {
