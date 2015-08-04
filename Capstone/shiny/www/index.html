@@ -5,6 +5,17 @@
   <script src="shared/shiny.js" type="text/javascript"></script>
   <link rel="stylesheet" type="text/css" href="bootstrap.css"/>
   <link rel="stylesheet" type="text/css" href="site.css"/>
+  <script type="text/javascript">
+
+  $(document).ready(function() {
+    Shiny.addCustomMessageHandler("updateButton",
+      function(message) {
+        $("#" + message.id).html(message.label);
+      }
+    );
+
+    });
+  </script>
 </head>
 
 <body>
@@ -27,7 +38,7 @@
       </div>
     </div>
   -->
-  
+
     <div class="row">
       <div class="col-md-8 col-md-offset-2">
         <div class="form-group shiny-input-container">

@@ -31,23 +31,36 @@ shinyServer(function(input, output, session) {
   # that it can update the progress indicator.
   loadNgrams(dir = "../nostop", updateProgress)
 
-
-  
-  
-  createTable <- function(text) {
+  predictions <- reactive({
+    text <- input$text
+    results <- predict(text)
+    results <- results[order(results$count, decreasing = TRUE),]
+    
+    total <- sum(results$count)
+    first <- results[1,]
+    second <- results[2,]
+    third <- results[3,]
+    
+##    setButtonText(first[[ncol(first) - 1]], second[[ncol(second) - 1]], third[[ncol(third) - 1]])
+    
     if (nchar(text) > 0) {
-      words <- strsplit(text, split = " ")
-      probabilities <- rep(0.24, length(words))
+      probabilities <- rep(0.24, 3)
       
-      df <- data.frame(words, probabilities, row.names = c(), stringsAsFactors = FALSE)
+      index <- ncol(results) - 1
+      df <- data.frame(results[c(1:3),index], probabilities, row.names = c(), stringsAsFactors = FALSE)
       colnames(df) <- c("Word", "Probability")
-      df      
     }
-  }
+    
+    session$sendCustomMessage(type = "updateButton", message = list(id = "first", label = df[[1, 1]]))
+    session$sendCustomMessage(type = "updateButton", message = list(id = "second", label = df[[2, 1]]))
+    session$sendCustomMessage(type = "updateButton", message = list(id = "third", label = df[[3, 1]]))
+    
+    df
+  })
+    
   
   output$table <- renderTable({
-    ## createTable(input$text)
-    predict(input$text)
+    predictions()
   })
 
   output$sentence <- renderText({
@@ -56,17 +69,17 @@ shinyServer(function(input, output, session) {
   
   
   observeEvent(input$first, {
-    n <- trim.leading(paste(input$text, "first", sep = " "))
-    updateTextInput(session, inputId = "text", value = n)
+    n <- trim.leading(paste(input$text, predictions()[1,1], sep = " "))
+    updateTextInput(session, inputId = "text", value = n)    
   })
     
   observeEvent(input$second, {
-    n <- trim.leading(paste(input$text, "second", sep = " "))
-    updateTextInput(session, inputId = "text", value = n)
+    n <- trim.leading(paste(input$text, predictions()[2,1], sep = " "))
+    updateTextInput(session, inputId = "text", value = n)        
   })
   
   observeEvent(input$third, {
-    n <- trim.leading(paste(input$text, "third", sep = " "))
+    n <- trim.leading(paste(input$text, predictions()[3,1], sep = " "))
     updateTextInput(session, inputId = "text", value = n)
   })
   
