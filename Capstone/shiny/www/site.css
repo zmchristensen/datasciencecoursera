@@ -8,6 +8,7 @@ body {
 
 h1#title {
   color: #19647E;
+  margin-top: 15px;
   margin-bottom: 15px;
 }
 
@@ -18,4 +19,16 @@ h1#title {
 
 #table {
   background-color: whitesmoke;
+}
+
+#center {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  margin-top: -50px;
+}
+
+#p-row {
+  text-align: center;
 }

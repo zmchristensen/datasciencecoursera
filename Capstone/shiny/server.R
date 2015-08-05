@@ -7,7 +7,6 @@ shinyServer(function(input, output, session) {
   
   trim.leading <- function (x)  sub("^\\s+", "", x)
 
-  
   # Create a Progress object
   progress <- shiny::Progress$new()
   progress$set(message = "", value = 0)
@@ -24,36 +23,42 @@ shinyServer(function(input, output, session) {
       value <- progress$getValue()
       value <- value + (progress$getMax() - value) / 5
     }
-    progress$set(value = value, detail = detail)
+    progress$set(value = value, detail = "")
+  }
+  
+  callback <- function() {
+    session$sendCustomMessage(type = "toggle", message = list())
   }
   
   # Compute the new data, and pass in the updateProgress function so
   # that it can update the progress indicator.
-  loadNgrams(dir = "../nostop", updateProgress)
+  loadNgrams(dir = "../nostop", updateProgress, callback)
 
   predictions <- reactive({
     text <- input$text
     results <- predict(text)
     results <- results[order(results$count, decreasing = TRUE),]
     
-    total <- sum(results$count)
-    first <- results[1,]
-    second <- results[2,]
-    third <- results[3,]
-    
-##    setButtonText(first[[ncol(first) - 1]], second[[ncol(second) - 1]], third[[ncol(third) - 1]])
-    
+    df <- data.frame()
     if (nchar(text) > 0) {
-      probabilities <- rep(0.24, 3)
-      
+      probabilities <- results$count / sum(results$count)
+    
       index <- ncol(results) - 1
-      df <- data.frame(results[c(1:3),index], probabilities, row.names = c(), stringsAsFactors = FALSE)
+      df <- data.frame(results[,index], probabilities, row.names = c(), stringsAsFactors = FALSE)
       colnames(df) <- c("Word", "Probability")
     }
     
-    session$sendCustomMessage(type = "updateButton", message = list(id = "first", label = df[[1, 1]]))
-    session$sendCustomMessage(type = "updateButton", message = list(id = "second", label = df[[2, 1]]))
-    session$sendCustomMessage(type = "updateButton", message = list(id = "third", label = df[[3, 1]]))
+    session$sendCustomMessage(type = "hideButtons", message = list(count = nrow(df)))
+    
+    if (nrow(df) > 0) {
+      session$sendCustomMessage(type = "updateButton", message = list(id = "first", label = df[[1, 1]]))
+    }
+    if (nrow(df) > 1) {
+      session$sendCustomMessage(type = "updateButton", message = list(id = "second", label = df[[2, 1]]))      
+    }
+    if (nrow(df) > 2) {
+      session$sendCustomMessage(type = "updateButton", message = list(id = "third", label = df[[3, 1]]))      
+    }
     
     df
   })
@@ -63,10 +68,6 @@ shinyServer(function(input, output, session) {
     predictions()
   })
 
-  output$sentence <- renderText({
-    input$text
-  })
-  
   
   observeEvent(input$first, {
     n <- trim.leading(paste(input$text, predictions()[1,1], sep = " "))
@@ -82,5 +83,7 @@ shinyServer(function(input, output, session) {
     n <- trim.leading(paste(input$text, predictions()[3,1], sep = " "))
     updateTextInput(session, inputId = "text", value = n)
   })
+  
+  outputOptions(output, "table", suspendWhenHidden=FALSE)
   
 })

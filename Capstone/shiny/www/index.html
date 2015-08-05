@@ -7,12 +7,58 @@
   <link rel="stylesheet" type="text/css" href="site.css"/>
   <script type="text/javascript">
 
-  $(document).ready(function() {
-    Shiny.addCustomMessageHandler("updateButton",
-      function(message) {
-        $("#" + message.id).html(message.label);
-      }
-    );
+    $(document).ready(function() {
+      Shiny.addCustomMessageHandler("toggle",
+        function(message) {
+          $('#inputs').toggleClass('hidden', false);
+          $('#p-row').toggleClass('hidden', true);
+        }
+      );
+
+      Shiny.addCustomMessageHandler("updateButton",
+        function(message) {
+          $("#" + message.id).html(message.label);
+        }
+      );
+
+      Shiny.addCustomMessageHandler("hideButtons",
+        function(message) {
+          console.log(message.count);
+          $("#first").toggleClass('hidden', true);
+          $("#second").toggleClass('hidden', true);
+          $("#third").toggleClass('hidden', true);
+
+          $("#first-col").toggleClass('col-md-4', false);
+          $("#first-col").toggleClass('col-md-6', false);
+          $("#first-col").toggleClass('col-md-12', false);
+          $("#second-col").toggleClass('col-md-4', false);
+          $("#second-col").toggleClass('col-md-6', false);
+          $("#second-col").toggleClass('col-md-12', false);
+          $("#third-col").toggleClass('col-md-4', false);
+          $("#third-col").toggleClass('col-md-6', false);
+          $("#third-col").toggleClass('col-md-12', false);
+
+
+          if (message.count > 0) {
+            $("#first").toggleClass('hidden', false);
+
+            $("#first-col").toggleClass('col-md-12', true);
+          }
+          if (message.count > 1) {
+            $("#second").toggleClass('hidden', false);
+
+            $("#first-col").toggleClass('col-md-6', true);
+            $("#second-col").toggleClass('col-md-6', true);
+          }
+          if (message.count > 2) {
+            $("#third").toggleClass('hidden', false);
+
+            $("#first-col").toggleClass('col-md-4', true);
+            $("#second-col").toggleClass('col-md-4', true);
+            $("#third-col").toggleClass('col-md-4', true);
+          }
+        }
+      );
 
     });
   </script>
@@ -24,9 +70,8 @@
     <!-- TITLE -->
     <h1 id="title">Text Prediction</h1>
 
-    <!--
-    <div class="shiny-progress-container">
-      <div class="shiny-progress open" id="29b282fb170babb8" style="display: block;">
+      <!--
+        <div class="shiny-progress open" id="29b282fb170babb8" style="display: block;">
         <div class="progress progress-striped active" style="top: 0px;">
           <div class="progress-bar bar" style="width: 48.8%;">
           </div>
@@ -36,46 +81,53 @@
           <span class="progress-detail">Loaded trigrams</span>
         </div>
       </div>
-    </div>
-  -->
-
-    <div class="row">
-      <div class="col-md-8 col-md-offset-2">
-        <div class="form-group shiny-input-container">
-          <input id="text" type="text" class="form-control shiny-bound-input" placeholder="Enter text...">
-        </div>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col-md-8 col-md-offset-2">
-        <table id="table" name="table" class="table table-bordered shiny-html-output"></table>
-      </div>
-    </div>
-
-
-    <div class="row">
-      <div class="col-md-8 col-md-offset-2">
+      -->
+    <div id="center">
+      <div id="p-row">
         <div class="row">
-          <div class="col-md-4">
-            <button id="first" type="button" class="btn btn-default full-width action-button shiny-bound-input">First</button>
+          <div class="col-md-8 col-md-offset-2">
+            <h6>Loading Data...</h6>
           </div>
-          <div class="col-md-4">
-            <button id="second" type="button" class="btn btn-default full-width action-button shiny-bound-input">Second</button>
-          </div>
-          <div class="col-md-4">
-            <button id="third" type="button" class="btn btn-default full-width action-button shiny-bound-input">Third</button>
+        </div>
+        <div class="row">
+          <div class="col-md-8 col-md-offset-2">
+            <div class="shiny-progress-container">
+            </div>
           </div>
         </div>
       </div>
-    </div>
+      <div id="inputs" class="hidden">
+        <div id="input-row" class="row">
+          <div class="col-md-8 col-md-offset-2">
+            <div class="form-group shiny-input-container">
+              <input id="text" type="text" class="form-control shiny-bound-input" placeholder="Enter text...">
+            </div>
+          </div>
+        </div>
 
-    <div class="row">
-      <div class="col-md-8 col-md-offset-2">
-        <span id="sentence" class="shiny-text-output shiny-bound-output"></p>
+        <div class="row">
+          <div class="col-md-8 col-md-offset-2">
+            <div class="row">
+              <div id="first-col" class="col-md-4">
+                <button id="first" type="button" class="btn btn-default full-width action-button shiny-bound-input hidden"></button>
+              </div>
+              <div id="second-col" class="col-md-4">
+                <button id="second" type="button" class="btn btn-default full-width action-button shiny-bound-input hidden"></button>
+              </div>
+              <div id="third-col" class="col-md-4">
+                <button id="third" type="button" class="btn btn-default full-width action-button shiny-bound-input hidden"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row hidden">
+        <div class="col-md-8 col-md-offset-2">
+          <table id="table" name="table" class="table table-bordered shiny-html-output"></table>
+        </div>
       </div>
     </div>
-
   </div>
 </body>
 
