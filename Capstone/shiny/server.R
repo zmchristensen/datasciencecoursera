@@ -43,8 +43,7 @@ shinyServer(function(input, output, session) {
     if (nchar(text) > 0) {
       probabilities <- results$count / sum(results$count)
     
-      index <- ncol(results) - 1
-      df <- data.frame(results[,index], probabilities, row.names = c(), stringsAsFactors = FALSE)
+      df <- data.frame(results[,1], probabilities, row.names = c(), stringsAsFactors = FALSE)
       colnames(df) <- c("Word", "Probability")
     }
     
