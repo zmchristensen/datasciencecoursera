@@ -102,55 +102,35 @@ predict <- function(phrase) {
   words <- strsplit(x = phrase, split = " ")[[1]]
   length <- length(words)
 
+  matches <- data.frame()
   if (length == 0) {
      "NA"
   }
-  else if (length == 1) {
-    matches <- filter(bi, bi["1"] == words[1])
-    r <- filter(matches, count == max(count))      
+  if (length >= 1) {
+    ## match against bi words and take last two columns
+    bi_matches <- filter(bi, bi["1"] == words[length])[,c(2:3)]
+    colnames(bi_matches) <- c("prediction", "count")
+    matches <- rbind(matches, bi_matches)
   }
-  else if (length == 2) {
-    matches <- filter(tri, tri["1"] == words[1], tri["2"] == words[2])
-    max_match <- filter(matches, count == max(count))      
-    
-    second <- filter(bi, bi["1"] == words[2])
-    max_second <- cbind("", filter(second, count == max(count)))
-    colnames(max_second) <- colnames(max_match)
-    
-    r <- rbind(max_match, max_second)
+  if (length >= 2) {
+    ## match against tri and take the last two columns
+    tri_matches <- filter(tri, tri["1"] == words[length - 1], tri["2"] == words[length])[,c(3:4)]
+    colnames(tri_matches) <- c("prediction", "count")
+    matches <- rbind(matches, tri_matches)
   }
-  else if (length == 3) {
-    matches <- filter(tetra, tetra["1"] == words[1], tetra["2"] == words[2], tetra["3"] == words[3])
-    max_match <- filter(matches, count == max(count))
-        
-    second <- filter(tri, tri["1"] == words[2], tri["2"] == words[3])
-    max_second <- cbind("", filter(second, count == max(count)))   
-    colnames(max_second) <- colnames(max_match)
-    
-    third <- filter(bi, bi["1"] == words[3])
-    max_third <- cbind("", "", filter(third, count == max(count)))
-    colnames(max_third) <- colnames(max_match)
-    
-    r <- rbind(max_match, max_second, max_third)
+  if (length >= 3) {
+    ## match against tetra and take the last two columns
+    tetra_matches <- filter(tetra, tetra["1"] == words[length - 2], tetra["2"] == words[length - 1], tetra["3"] == words[length])[,c(4:5)]
+    colnames(tetra_matches) <- c("prediction", "count")
+    matches <- rbind(matches, tetra_matches)
   }
-  else {
-    words <- c(words[length(words) - 2], words[length(words) - 1], words[length(words)])
-    
-    matches <- filter(tetra, tetra["1"] == words[1], tetra["2"] == words[2], tetra["3"] == words[3])
-    max_match <- filter(matches, count == max(count))
-    
-    second <- filter(tri, tri["1"] == words[2], tri["2"] == words[3])
-    max_second <- cbind("", filter(second, count == max(count)))     
-    colnames(max_second) <- colnames(max_match)
-    
-    third <- filter(bi, bi["1"] == words[3])
-    max_third <- cbind("", "", filter(third, count == max(count)))
-    colnames(max_third) <- colnames(max_match)
-    
-    r <- rbind(max_match, max_second, max_third)
+  if (length >= 4) {
+      penta_matches <- filter(penta, penta["1"] == words[length - 3], penta["2"] == words[length - 2], penta["3"] == words[length - 1], penta["4"] == words[length])[,c(5:6)]
+      colnames(penta_matches) <- c("prediction", "count")
+      matches <- rbind(matches, penta_matches)
   }
-  
-  r <- r %>% group_by(r[,ncol(r) - 1]) %>% summarise(count = sum(count))
+
+  r <- matches %>% group_by(prediction) %>% summarise(count = sum(count))
   colnames(r) <- c("prediction", "count")
   r
 }
