@@ -108,29 +108,29 @@ predict <- function(phrase) {
   }
   if (length >= 1) {
     ## match against bi words and take last two columns
-    bi_matches <- filter(bi, bi["1"] == words[length])[,c(2:3)]
-    colnames(bi_matches) <- c("prediction", "count")
+    bi_matches <- filter(bi, bi["1"] == words[length])[,c(2:3)] %>% mutate("source" = "bi")
+    colnames(bi_matches) <- c("prediction", "count", "source")
     matches <- rbind(matches, bi_matches)
   }
   if (length >= 2) {
     ## match against tri and take the last two columns
-    tri_matches <- filter(tri, tri["1"] == words[length - 1], tri["2"] == words[length])[,c(3:4)]
-    colnames(tri_matches) <- c("prediction", "count")
+    tri_matches <- filter(tri, tri["1"] == words[length - 1], tri["2"] == words[length])[,c(3:4)] %>% mutate("source" = "tri")
+    colnames(tri_matches) <- c("prediction", "count", "source")
     matches <- rbind(matches, tri_matches)
   }
   if (length >= 3) {
     ## match against tetra and take the last two columns
-    tetra_matches <- filter(tetra, tetra["1"] == words[length - 2], tetra["2"] == words[length - 1], tetra["3"] == words[length])[,c(4:5)]
-    colnames(tetra_matches) <- c("prediction", "count")
+    tetra_matches <- filter(tetra, tetra["1"] == words[length - 2], tetra["2"] == words[length - 1], tetra["3"] == words[length])[,c(4:5)] %>% mutate("source" = "tetra")
+    colnames(tetra_matches) <- c("prediction", "count", "source")
     matches <- rbind(matches, tetra_matches)
   }
   if (length >= 4) {
-      penta_matches <- filter(penta, penta["1"] == words[length - 3], penta["2"] == words[length - 2], penta["3"] == words[length - 1], penta["4"] == words[length])[,c(5:6)]
-      colnames(penta_matches) <- c("prediction", "count")
+      penta_matches <- filter(penta, penta["1"] == words[length - 3], penta["2"] == words[length - 2], penta["3"] == words[length - 1], penta["4"] == words[length])[,c(5:6)] %>% mutate("source" = "penta")
+      colnames(penta_matches) <- c("prediction", "count", "source")
       matches <- rbind(matches, penta_matches)
   }
 
-  r <- matches %>% group_by(prediction) %>% summarise(count = sum(count))
-  colnames(r) <- c("prediction", "count")
+  r <- matches %>% group_by(prediction, source) %>% summarise(count = sum(count))
+  colnames(r) <- c("prediction", "source", "count")
   r
 }

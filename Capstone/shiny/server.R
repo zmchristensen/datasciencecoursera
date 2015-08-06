@@ -43,20 +43,20 @@ shinyServer(function(input, output, session) {
     if (nchar(text) > 0) {
       probabilities <- results$count / sum(results$count)
     
-      df <- data.frame(results[,1], probabilities, row.names = c(), stringsAsFactors = FALSE)
-      colnames(df) <- c("Word", "Probability")
+      df <- data.frame(results[,c(1:2)], probabilities, row.names = c(), stringsAsFactors = FALSE)
+      colnames(df) <- c("Word", "Source", "Probability")
     }
     
     session$sendCustomMessage(type = "hideButtons", message = list(count = nrow(df)))
     
     if (nrow(df) > 0) {
-      session$sendCustomMessage(type = "updateButton", message = list(id = "first", label = df[[1, 1]]))
+      session$sendCustomMessage(type = "updateButton", message = list(id = "first", label = df[[1, 1]], percentage = df[1, "Probability"]))
     }
     if (nrow(df) > 1) {
-      session$sendCustomMessage(type = "updateButton", message = list(id = "second", label = df[[2, 1]]))      
+      session$sendCustomMessage(type = "updateButton", message = list(id = "second", label = df[[2, 1]], percentage = df[[2, "Probability"]]))      
     }
     if (nrow(df) > 2) {
-      session$sendCustomMessage(type = "updateButton", message = list(id = "third", label = df[[3, 1]]))      
+      session$sendCustomMessage(type = "updateButton", message = list(id = "third", label = df[[3, 1]], percentage = df[3, "Probability"]))      
     }
     
     df
@@ -84,5 +84,4 @@ shinyServer(function(input, output, session) {
   })
   
   outputOptions(output, "table", suspendWhenHidden=FALSE)
-  
 })
