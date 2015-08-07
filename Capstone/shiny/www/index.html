@@ -16,9 +16,20 @@
         }
       );
 
+      Shiny.addCustomMessageHandler("predictedProbability",
+        function(message) {
+          if (message.predicted == 100) {
+            $("#other").html("I have no idea what you are trying to say.");
+          }
+          else {
+            $("#other").html("Other words accounted for " + (100 - message.predicted) + "% of the predictions.");
+          }
+        }
+      );
+
       Shiny.addCustomMessageHandler("updateButton",
         function(message) {
-          $("#" + message.id).html(message.label);
+          $("#" + message.id).html(message.label + " (" + message.percentage + "%)");
           $('#' + message.id).css('backgroundColor', 'rgba(76, 175, 80, message.percentage)');
         }
       );
@@ -99,12 +110,6 @@
           </div>
         </div>
 
-        <div id="input-row" class="row">
-          <div class="col-md-8 col-md-offset-2">
-            <hr />
-          </div>
-        </div>
-
         <div class="row">
           <div class="col-md-8 col-md-offset-2">
             <div class="row">
@@ -120,6 +125,13 @@
             </div>
           </div>
         </div>
+
+        <div class="row">
+          <div class="col-md-8 col-md-offset-2 text-center">
+            <p id="other"></p>
+          </div>
+        </div>
+
       </div>
 
       <div class="row hidden">

@@ -43,21 +43,27 @@ shinyServer(function(input, output, session) {
     if (nchar(text) > 0) {
       probabilities <- results$count / sum(results$count)
     
-      df <- data.frame(results[,c(1:2)], probabilities, row.names = c(), stringsAsFactors = FALSE)
-      colnames(df) <- c("Word", "Source", "Probability")
+      df <- data.frame(results[,1], probabilities, row.names = c(), stringsAsFactors = FALSE)
+      colnames(df) <- c("Word", "Probability")
     }
     
     session$sendCustomMessage(type = "hideButtons", message = list(count = nrow(df)))
     
+    predictedProb <- 0
     if (nrow(df) > 0) {
-      session$sendCustomMessage(type = "updateButton", message = list(id = "first", label = df[[1, 1]], percentage = df[1, "Probability"]))
+      predictedProb <- predictedProb + round(df[1, "Probability"] * 100, digits = 0)
+      session$sendCustomMessage(type = "updateButton", message = list(id = "first", label = df[[1, 1]], percentage = round(df[1, "Probability"] * 100, digits = 0)))
     }
     if (nrow(df) > 1) {
-      session$sendCustomMessage(type = "updateButton", message = list(id = "second", label = df[[2, 1]], percentage = df[[2, "Probability"]]))      
+      predictedProb <- predictedProb + round(df[2, "Probability"] * 100, digits = 0)
+      session$sendCustomMessage(type = "updateButton", message = list(id = "second", label = df[[2, 1]], percentage = round(df[2, "Probability"] * 100, digits = 0)))      
     }
     if (nrow(df) > 2) {
-      session$sendCustomMessage(type = "updateButton", message = list(id = "third", label = df[[3, 1]], percentage = df[3, "Probability"]))      
+      predictedProb <- predictedProb + round(df[3, "Probability"] * 100, digits = 0)
+      session$sendCustomMessage(type = "updateButton", message = list(id = "third", label = df[[3, 1]], percentage = round(df[3, "Probability"] * 100, digits = 0)))      
     }
+    
+    session$sendCustomMessage(type = "predictedProbability", message = list(predicted = predictedProb))
     
     df
   })

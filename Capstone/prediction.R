@@ -20,29 +20,29 @@ loadNgrams <- function(dir, updateProgress = NULL, callback = NULL) {
     updateProgress(detail = "Loaded bigrams")
   }
   
-#   tri <- rbind(
-#     preprocessGram(paste(dir, "/", types[1], "-trigram.RData", sep = "")),
-#     preprocessGram(paste(dir, "/", types[2], "-trigram.RData", sep = "")),
-#     preprocessGram(paste(dir, "/", types[3], "-trigram.RData", sep = ""))
-#   )
-#   if (is.function(updateProgress)) {
-#     updateProgress(detail = "Loaded trigrams")
-#   }
-#   
-#   tetra <- rbind(
-#     preprocessGram(paste(dir, "/", types[1], "-tetragram.RData", sep = "")),
-#     preprocessGram(paste(dir, "/", types[2], "-tetragram.RData", sep = "")),
-#     preprocessGram(paste(dir, "/", types[3], "-tetragram.RData", sep = ""))
-#   )
-#   if (is.function(updateProgress)) {
-#     updateProgress(detail = "Loaded tetragrams")
-#   }
-#   
-#   penta <- rbind(
-#     preprocessGram(paste(dir, "/", types[1], "-pentagram.RData", sep = "")),
-#     preprocessGram(paste(dir, "/", types[2], "-pentagram.RData", sep = "")),
-#     preprocessGram(paste(dir, "/", types[3], "-pentagram.RData", sep = ""))
-#   )  
+  tri <- rbind(
+    preprocessGram(paste(dir, "/", types[1], "-trigram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[2], "-trigram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[3], "-trigram.RData", sep = ""))
+  )
+  if (is.function(updateProgress)) {
+    updateProgress(detail = "Loaded trigrams")
+  }
+  
+  tetra <- rbind(
+    preprocessGram(paste(dir, "/", types[1], "-tetragram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[2], "-tetragram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[3], "-tetragram.RData", sep = ""))
+  )
+  if (is.function(updateProgress)) {
+    updateProgress(detail = "Loaded tetragrams")
+  }
+  
+  penta <- rbind(
+    preprocessGram(paste(dir, "/", types[1], "-pentagram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[2], "-pentagram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[3], "-pentagram.RData", sep = ""))
+  )  
   if (is.function(updateProgress)) {
     updateProgress(detail = "Loaded pentagrams")
   }
@@ -130,7 +130,7 @@ predict <- function(phrase) {
       matches <- rbind(matches, penta_matches)
   }
 
-  r <- matches %>% group_by(prediction, source) %>% summarise(count = sum(count))
-  colnames(r) <- c("prediction", "source", "count")
+  r <- matches %>% group_by(prediction) %>% summarise(count = sum(count))
+  colnames(r) <- c("prediction", "count")
   r
 }

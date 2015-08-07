@@ -18,7 +18,6 @@ body {
   color: #616161;
 }
 
-
 #text {
   text-align: center;
   color: #616161;
@@ -50,18 +49,6 @@ textarea:focus, input:focus, input[type]:focus, .uneditable-input:focus {
     outline: 0 none;
 }
 
-.form-group {
-  margin-bottom: 0px;
-}
-
-hr {
-  border-color: #28AFB0;
-}
-
-#table {
-  background-color: whitesmoke;
-}
-
 #center {
   position: absolute;
   left: 0;
@@ -72,6 +59,10 @@ hr {
 
 #p-row {
   text-align: center;
+}
+
+#other {
+  margin-top: 10px;
 }
 
 
