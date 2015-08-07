@@ -96,7 +96,7 @@ sanitize <- function(text) {
   corpus
 }
 
-predict <- function(phrase) {
+predict <- function(phrase, uni, bi, tri, tetra, penta) {
   
   phrase <- sanitize(phrase)[[1]]$content
   words <- strsplit(x = phrase, split = " ")[[1]]

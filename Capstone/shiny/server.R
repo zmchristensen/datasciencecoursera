@@ -1,6 +1,10 @@
 library(shiny)
-
-source(file = "../prediction.R")
+library(tm)
+library(SnowballC)
+library(RWeka)
+library(reshape)
+library(dplyr)
+source(file = "prediction.R")
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output, session) {
@@ -26,17 +30,49 @@ shinyServer(function(input, output, session) {
     progress$set(value = value, detail = "")
   }
   
-  callback <- function() {
-    session$sendCustomMessage(type = "toggle", message = list())
-  }
+  dir <- "nostop"
+  types <- c("blogs", "news", "tweets")
   
-  # Compute the new data, and pass in the updateProgress function so
-  # that it can update the progress indicator.
-  loadNgrams(dir = "../nostop", updateProgress, callback)
-
+  uni <- rbind(
+    preprocessGram(paste(dir, "/", types[1], "-unigram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[2], "-unigram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[3], "-unigram.RData", sep = ""))
+  )
+  updateProgress(detail = "Loaded unigrams")
+  
+  bi <- rbind(
+    preprocessGram(paste(dir, "/", types[1], "-bigram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[2], "-bigram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[3], "-bigram.RData", sep = ""))
+  )
+  updateProgress(detail = "Loaded bigrams")
+  
+  tri <- rbind(
+    preprocessGram(paste(dir, "/", types[1], "-trigram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[2], "-trigram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[3], "-trigram.RData", sep = ""))
+  )
+  updateProgress(detail = "Loaded trigrams")
+  
+  tetra <- rbind(
+    preprocessGram(paste(dir, "/", types[1], "-tetragram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[2], "-tetragram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[3], "-tetragram.RData", sep = ""))
+  )
+  updateProgress(detail = "Loaded tetragrams")
+  
+  penta <- rbind(
+    preprocessGram(paste(dir, "/", types[1], "-pentagram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[2], "-pentagram.RData", sep = "")),
+    preprocessGram(paste(dir, "/", types[3], "-pentagram.RData", sep = ""))
+  )  
+  updateProgress(detail = "Loaded pentagrams")
+  
+  session$sendCustomMessage(type = "toggle", message = list())
+  
   predictions <- reactive({
     text <- input$text
-    results <- predict(text)
+    results <- predict(text, uni, bi, tri, tetra, penta)
     results <- results[order(results$count, decreasing = TRUE),]
     
     df <- data.frame()
