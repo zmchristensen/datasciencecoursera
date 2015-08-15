@@ -40,7 +40,7 @@ read <- function(sourceFile, outputDir, dataSource, lines) {
     corpus <- tm_map(corpus, content_transformer(tolower))
     
     ## remove stopwords before punctuation removed
-    corpus <- tm_map(corpus, removeWords, stopwords("english"))
+    ## corpus <- tm_map(corpus, removeWords, stopwords("english"))
     
     ## remove numbers, punctuation, and whitespace
     corpus <- tm_map(corpus, removeNumbers)

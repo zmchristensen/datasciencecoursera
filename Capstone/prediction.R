@@ -1,6 +1,5 @@
 
-
-loadNgrams <- function(dir) {
+loadNgrams <- function(dir, updateProgress = NULL, callback = NULL) {
   types <- c("blogs", "news", "tweets")
   
   uni <- rbind(
@@ -8,26 +7,49 @@ loadNgrams <- function(dir) {
     preprocessGram(paste(dir, "/", types[2], "-unigram.RData", sep = "")),
     preprocessGram(paste(dir, "/", types[3], "-unigram.RData", sep = ""))
   )
+  if (is.function(updateProgress)) {
+    updateProgress(detail = "Loaded unigrams")
+  }
+  
   bi <- rbind(
     preprocessGram(paste(dir, "/", types[1], "-bigram.RData", sep = "")),
     preprocessGram(paste(dir, "/", types[2], "-bigram.RData", sep = "")),
     preprocessGram(paste(dir, "/", types[3], "-bigram.RData", sep = ""))
   )
+  if (is.function(updateProgress)) {
+    updateProgress(detail = "Loaded bigrams")
+  }
+  
   tri <- rbind(
     preprocessGram(paste(dir, "/", types[1], "-trigram.RData", sep = "")),
     preprocessGram(paste(dir, "/", types[2], "-trigram.RData", sep = "")),
     preprocessGram(paste(dir, "/", types[3], "-trigram.RData", sep = ""))
   )
+  if (is.function(updateProgress)) {
+    updateProgress(detail = "Loaded trigrams")
+  }
+  
   tetra <- rbind(
     preprocessGram(paste(dir, "/", types[1], "-tetragram.RData", sep = "")),
     preprocessGram(paste(dir, "/", types[2], "-tetragram.RData", sep = "")),
     preprocessGram(paste(dir, "/", types[3], "-tetragram.RData", sep = ""))
   )
+  if (is.function(updateProgress)) {
+    updateProgress(detail = "Loaded tetragrams")
+  }
+  
   penta <- rbind(
     preprocessGram(paste(dir, "/", types[1], "-pentagram.RData", sep = "")),
     preprocessGram(paste(dir, "/", types[2], "-pentagram.RData", sep = "")),
     preprocessGram(paste(dir, "/", types[3], "-pentagram.RData", sep = ""))
   )  
+  if (is.function(updateProgress)) {
+    updateProgress(detail = "Loaded pentagrams")
+  }
+  
+  if (is.function(callback)) {
+    callback()
+  }
 }
 
 preprocessGram <- function(fileName) {
@@ -74,57 +96,41 @@ sanitize <- function(text) {
   corpus
 }
 
-predict <- function(phrase) {
+predict <- function(phrase, uni, bi, tri, tetra, penta) {
   
   phrase <- sanitize(phrase)[[1]]$content
   words <- strsplit(x = phrase, split = " ")[[1]]
   length <- length(words)
 
+  matches <- data.frame()
   if (length == 0) {
      "NA"
   }
-  else if (length == 1) {
-    matches <- filter(bi, bi["1"] == words[1])
-    filter(matches, count == max(count))      
+  if (length >= 1) {
+    ## match against bi words and take last two columns
+    bi_matches <- filter(bi, bi["1"] == words[length])[,c(2:3)] %>% mutate("source" = "bi")
+    colnames(bi_matches) <- c("prediction", "count", "source")
+    matches <- rbind(matches, bi_matches)
   }
-  else if (length == 2) {
-    matches <- filter(tri, tri["1"] == words[1], tri["2"] == words[2])
-    max_match <- filter(matches, count == max(count))      
-    
-    second <- filter(bi, bi["1"] == words[2])
-    max_second <- cbind("", filter(second, count == max(count)))
-    colnames(max_second) <- colnames(max_match)
-    
-    rbind(max_match, max_second)
+  if (length >= 2) {
+    ## match against tri and take the last two columns
+    tri_matches <- filter(tri, tri["1"] == words[length - 1], tri["2"] == words[length])[,c(3:4)] %>% mutate("source" = "tri")
+    colnames(tri_matches) <- c("prediction", "count", "source")
+    matches <- rbind(matches, tri_matches)
   }
-  else if (length == 3) {
-    matches <- filter(tetra, tetra["1"] == words[1], tetra["2"] == words[2], tetra["3"] == words[3])
-    max_match <- filter(matches, count == max(count))
-        
-    second <- filter(tri, tri["1"] == words[2], tri["2"] == words[3])
-    max_second <- cbind("", filter(second, count == max(count)))   
-    colnames(max_second) <- colnames(max_match)
-    
-    third <- filter(bi, bi["1"] == words[3])
-    max_third <- cbind("", "", filter(third, count == max(count)))
-    colnames(max_third) <- colnames(max_match)
-    
-    rbind(max_match, max_second, max_third)
+  if (length >= 3) {
+    ## match against tetra and take the last two columns
+    tetra_matches <- filter(tetra, tetra["1"] == words[length - 2], tetra["2"] == words[length - 1], tetra["3"] == words[length])[,c(4:5)] %>% mutate("source" = "tetra")
+    colnames(tetra_matches) <- c("prediction", "count", "source")
+    matches <- rbind(matches, tetra_matches)
   }
-  else {
-    words <- c(words[length(words) - 2], words[length(words) - 1], words[length(words)])
-    
-    matches <- filter(tetra, tetra["1"] == words[1], tetra["2"] == words[2], tetra["3"] == words[3])
-    max_match <- filter(matches, count == max(count))
-    
-    second <- filter(tri, tri["1"] == words[2], tri["2"] == words[3])
-    max_second <- cbind("", filter(second, count == max(count)))     
-    colnames(max_second) <- colnames(max_match)
-    
-    third <- filter(bi, bi["1"] == words[3])
-    max_third <- cbind("", "", filter(third, count == max(count)))
-    colnames(max_third) <- colnames(max_match)
-    
-    rbind(max_match, max_second, max_third)
+  if (length >= 4) {
+      penta_matches <- filter(penta, penta["1"] == words[length - 3], penta["2"] == words[length - 2], penta["3"] == words[length - 1], penta["4"] == words[length])[,c(5:6)] %>% mutate("source" = "penta")
+      colnames(penta_matches) <- c("prediction", "count", "source")
+      matches <- rbind(matches, penta_matches)
   }
+
+  r <- matches %>% group_by(prediction) %>% summarise(count = sum(count))
+  colnames(r) <- c("prediction", "count")
+  r
 }
