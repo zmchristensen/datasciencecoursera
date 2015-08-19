@@ -11,12 +11,10 @@
 
       Shiny.addCustomMessageHandler("processing",
         function(message) {
-          console.log(message.input);
           if (message.input != "") {
             $("#predict-progress").toggleClass("hidden", !(message.processing == "true"));
             $("#predict-buttons").toggleClass("hidden", (message.processing == "true"));
             $("#predict-other").toggleClass("hidden", (message.processing == "true"));
-            console.log(message.input);
           }
         }
       );
